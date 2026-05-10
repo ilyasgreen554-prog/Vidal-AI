@@ -17,4 +17,161 @@
         .input-dark { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; color: white; }
         
         /* تصميم نافذة تسجيل الدخول */
-        #authModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 2
+        #authModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div id="authModal">
+        <div class="glass-card text-center relative">
+            <button onclick="closeAuth()" class="absolute top-4 right-6 text-gray-500 hover:text-white">✕</button>
+            <h2 class="text-2xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">Join Vidal-AI</h2>
+            <p class="text-gray-400 text-xs mb-8 uppercase tracking-widest">Sign in to generate your video</p>
+            
+            <input type="email" id="authEmail" placeholder="Enter your email" class="input-dark w-full p-4 mb-4 text-center text-sm outline-none">
+            <button onclick="handleLogin()" id="authBtn" class="w-full py-4 bg-blue-600 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg">
+                Send Magic Link
+            </button>
+            <p id="authStatus" class="mt-6 text-[9px] font-bold text-blue-400 uppercase tracking-widest"></p>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-black italic tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">VIDAL-AI</h1>
+            <p class="text-gray-500 text-[8px] font-bold uppercase tracking-[0.4em]">Ready for Generation</p>
+        </header>
+
+        <div class="mb-6">
+            <label class="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-3 block">Choose Style Template</label>
+            <div class="grid grid-cols-3 gap-2">
+                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('cinematic', 'Cinematic 4k, slow motion, dynamic lighting')">
+                    <span class="text-xl block mb-1">🎬</span>
+                    <span class="text-[8px] font-bold uppercase tracking-tighter">Cinematic</span>
+                </div>
+                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('premium', '360 rotation, studio lighting, clean background')">
+                    <span class="text-xl block mb-1">💎</span>
+                    <span class="text-[8px] font-bold uppercase tracking-tighter">Premium</span>
+                </div>
+                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('urban', 'Neon lights, fast transitions, streetwear style')">
+                    <span class="text-xl block mb-1">🏙️</span>
+                    <span class="text-[8px] font-bold uppercase tracking-tighter">Urban</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="upload-wrapper mb-6 flex flex-col items-center justify-center">
+            <input type="file" id="fileInput" accept="image/*">
+            <div id="uploadContent" class="text-center">
+                <div class="text-3xl mb-2">📸</div>
+                <p class="font-bold text-[10px] text-gray-300 uppercase">Tap to Upload</p>
+            </div>
+            <img id="imagePreview" class="hidden absolute inset-0 w-full h-full object-cover">
+        </div>
+
+        <div class="mb-8">
+            <label class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2 block">Custom Motion Prompt</label>
+            <textarea id="promptInput" rows="2" placeholder="Describe movement here..." class="input-dark w-full p-4 text-[12px] resize-none outline-none focus:border-blue-500"></textarea>
+        </div>
+
+        <button id="generateBtn" class="w-full py-5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+            Generate Magic
+        </button>
+
+        <div id="statusMsg" class="mt-6 text-center text-[9px] font-black uppercase tracking-widest min-h-[12px]"></div>
+    </div>
+
+    <script>
+        // إعداد Supabase (استخدم مفاتيحك من Cloudflare)
+        const supabaseUrl = typeof VITE_SUPABASE_URL !== 'undefined' ? VITE_SUPABASE_URL : '';
+        const supabaseAnonKey = typeof VITE_SUPABASE_ANON_KEY !== 'undefined' ? VITE_SUPABASE_ANON_KEY : '';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('imagePreview');
+        const content = document.getElementById('uploadContent');
+        const promptInput = document.getElementById('promptInput');
+        const statusMsg = document.getElementById('statusMsg');
+        const authModal = document.getElementById('authModal');
+
+        // وظائف القوالب
+        function setTemplate(id, promptText) {
+            document.querySelectorAll('.template-card').forEach(card => card.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            promptInput.value = promptText;
+            statusMsg.innerHTML = `<span class="text-purple-400">${id.toUpperCase()} READY</span>`;
+        }
+
+        // إغلاق نافذة الدخول
+        function closeAuth() { authModal.style.display = 'none'; }
+
+        // تسجيل الدخول (Magic Link)
+        async function handleLogin() {
+            const email = document.getElementById('authEmail').value;
+            if (!email) return;
+            document.getElementById('authBtn').disabled = true;
+            document.getElementById('authStatus').innerText = "Sending magic link...";
+            
+            const { error } = await supabase.auth.signInWithOtp({ email });
+            if (error) {
+                document.getElementById('authStatus').innerText = "Error: " + error.message;
+            } else {
+                document.getElementById('authStatus').innerText = "Check your email to login! 📧";
+            }
+            document.getElementById('authBtn').disabled = false;
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    previewImg.src = ev.target.result;
+                    previewImg.classList.remove('hidden');
+                    content.classList.add('opacity-0');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // أهم وظيفة: الضغط على زر التوليد
+        document.getElementById('generateBtn').onclick = async () => {
+            // 1. التحقق هل المستخدم مسجل دخول؟
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                // إذا لم يكن مسجلاً، اظهر نافذة الدخول
+                authModal.style.display = 'flex';
+                return;
+            }
+
+            // إذا كان مسجلاً، ابدأ عملية الرفع الحقيقية
+            if (!fileInput.files[0]) {
+                statusMsg.innerHTML = '<span class="text-red-400 font-black">Select Image First</span>';
+                return;
+            }
+
+            statusMsg.innerHTML = '<span class="text-blue-400 animate-pulse font-black italic">Generating your masterpiece...</span>';
+            
+            try {
+                const file = fileInput.files[0];
+                const fileName = `vidal_${Date.now()}.png`;
+                
+                // الرفع لـ Storage
+                await supabase.storage.from('product-images').upload(fileName, file);
+                
+                // الحفظ في الجدول
+                await supabase.from('video_requests').insert([{ 
+                    image_path: fileName, 
+                    prompt: promptInput.value,
+                    user_id: user.id // ربط الطلب بصاحب الحساب
+                }]);
+                
+                statusMsg.innerHTML = '<span class="text-green-500 font-black">Magic Sent to Server! ✅</span>';
+            } catch (err) {
+                statusMsg.innerHTML = `<span class="text-red-500 font-black">Error: ${err.message}</span>`;
+            }
+        };
+    </script>
+</body>
+</html>
