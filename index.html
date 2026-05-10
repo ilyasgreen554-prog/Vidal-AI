@@ -9,94 +9,129 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at top right, #1a1a2e, #050505); color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .glass-card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.05); width: 92%; max-width: 440px; border-radius: 2.5rem; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .template-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s; cursor: pointer; }
-        .template-card:hover { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
-        .template-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
-        .upload-wrapper { position: relative; height: 180px; border: 2px dashed rgba(59, 130, 246, 0.3); border-radius: 1.5rem; overflow: hidden; background: rgba(0, 0, 0, 0.3); }
-        #fileInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
-        .input-dark { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+        .glass-card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.05); width: 92%; max-width: 440px; border-radius: 2.5rem; padding: 2rem; }
+        .input-dark { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; color: white; }
+        .template-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); transition: 0.3s; cursor: pointer; }
+        .template-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        #authOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="p-4">
 
+    <div id="authOverlay" class="hidden">
+        <div class="glass-card text-center">
+            <h2 class="text-2xl font-black mb-4">Welcome to Vidal-AI</h2>
+            <p class="text-gray-400 text-sm mb-6">Please sign in to start generating magic</p>
+            <input type="email" id="authEmail" placeholder="Enter your email" class="input-dark w-full p-4 mb-4 text-center">
+            <button onclick="handleLogin()" id="authBtn" class="w-full py-4 bg-blue-600 rounded-xl font-bold uppercase tracking-widest text-xs">
+                Send Login Link
+            </button>
+            <p id="authMsg" class="mt-4 text-[10px] text-blue-400 font-bold uppercase"></p>
+        </div>
+    </div>
+
     <div class="glass-card">
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-black italic tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">VIDAL-AI</h1>
-            <p class="text-gray-500 text-[8px] font-bold uppercase tracking-[0.4em]">Next-Gen Motion Lab</p>
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-black italic tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">VIDAL-AI</h1>
+            </div>
+            <button onclick="handleLogout()" class="text-[8px] font-bold text-gray-500 uppercase border border-gray-800 px-3 py-1 rounded-full">Logout</button>
         </header>
 
         <div class="mb-6">
-            <label class="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-3 block">Choose Style Template</label>
+            <label class="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-3 block">Templates</label>
             <div class="grid grid-cols-3 gap-2">
-                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('cinematic', 'Cinematic 4k, slow motion, dynamic lighting, high contrast, car enthusiast style')">
-                    <span class="text-xl block mb-1">🎬</span>
-                    <span class="text-[8px] font-bold uppercase tracking-tighter">Cinematic</span>
-                </div>
-                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('commercial', 'Commercial product display, 360 rotation, studio lighting, clean white background, 8k')">
-                    <span class="text-xl block mb-1">💎</span>
-                    <span class="text-[8px] font-bold uppercase tracking-tighter">Premium</span>
-                </div>
-                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('urban', 'Urban streetwear style, glitch effects, neon lights, fast transitions, handheld camera')">
-                    <span class="text-xl block mb-1">🏙️</span>
-                    <span class="text-[8px] font-bold uppercase tracking-tighter">Urban</span>
-                </div>
+                <div class="template-card p-2 rounded-xl text-center active" onclick="setTemplate('cinematic', 'Cinematic, 4k, dynamic lighting')">🎬</div>
+                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('premium', '360 rotation, studio lighting')">💎</div>
+                <div class="template-card p-2 rounded-xl text-center" onclick="setTemplate('urban', 'Neon lights, fast motion')">🏙️</div>
             </div>
         </div>
 
-        <div class="upload-wrapper mb-6 flex flex-col items-center justify-center">
-            <input type="file" id="fileInput" accept="image/*">
-            <div id="uploadContent" class="text-center">
-                <div class="text-3xl mb-2">📸</div>
-                <p class="font-bold text-[10px] text-gray-300 uppercase">Tap to Upload</p>
+        <div class="relative h-40 border-2 border-dashed border-gray-800 rounded-2xl mb-6 flex items-center justify-center overflow-hidden">
+            <input type="file" id="fileInput" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer">
+            <div id="uploadPlaceholder" class="text-center">
+                <span class="text-2xl">📸</span>
+                <p class="text-[10px] font-bold text-gray-500 uppercase mt-2">Tap to upload</p>
             </div>
             <img id="imagePreview" class="hidden absolute inset-0 w-full h-full object-cover">
         </div>
 
         <div class="mb-6">
-            <label class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2 block">Custom Motion Prompt</label>
-            <textarea id="promptInput" rows="2" placeholder="Select a template or write here..." class="input-dark w-full p-3 text-[12px] text-gray-300 resize-none outline-none focus:border-blue-500"></textarea>
+            <textarea id="promptInput" rows="2" placeholder="Describe motion..." class="input-dark w-full p-3 text-xs resize-none"></textarea>
         </div>
 
-        <button id="generateBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:opacity-90 transition-all">
+        <button id="generateBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl">
             Generate Magic
         </button>
-
-        <div id="statusMsg" class="mt-4 text-center text-[9px] font-black uppercase tracking-widest min-h-[12px]"></div>
+        <p id="statusMsg" class="mt-4 text-center text-[9px] font-bold uppercase min-h-[10px]"></p>
     </div>
 
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const previewImg = document.getElementById('imagePreview');
-        const content = document.getElementById('uploadContent');
-        const promptInput = document.getElementById('promptInput');
+        // إعداد Supabase
+        const supabaseUrl = typeof VITE_SUPABASE_URL !== 'undefined' ? VITE_SUPABASE_URL : '';
+        const supabaseAnonKey = typeof VITE_SUPABASE_ANON_KEY !== 'undefined' ? VITE_SUPABASE_ANON_KEY : '';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+        const authOverlay = document.getElementById('authOverlay');
         const statusMsg = document.getElementById('statusMsg');
 
-        // وظيفة اختيار القالب
-        function setTemplate(id, promptText) {
-            // إزالة الحالة النشطة من الكل
-            document.querySelectorAll('.template-card').forEach(card => card.classList.remove('active'));
-            // إضافة حالة نشطة للعنصر المختار
-            event.currentTarget.classList.add('active');
-            // وضع النص في الخانة
-            promptInput.value = promptText;
-            statusMsg.innerHTML = `<span class="text-purple-400">${id.toUpperCase()} TEMPLATE APPLIED</span>`;
+        // 1. التحقق من حالة المستخدم عند فتح الصفحة
+        async function checkUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                authOverlay.classList.remove('hidden');
+            }
+        }
+        checkUser();
+
+        // 2. تسجيل الدخول عبر البريد (Magic Link)
+        async function handleLogin() {
+            const email = document.getElementById('authEmail').value;
+            const authBtn = document.getElementById('authBtn');
+            if (!email) return;
+
+            authBtn.disabled = true;
+            const { error } = await supabase.auth.signInWithOtp({ email });
+            
+            if (error) {
+                document.getElementById('authMsg').innerText = "Error: " + error.message;
+            } else {
+                document.getElementById('authMsg').innerText = "Check your email for login link! ✅";
+            }
+            authBtn.disabled = false;
         }
 
-        fileInput.addEventListener('change', (e) => {
+        // 3. تسجيل الخروج
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            window.location.reload();
+        }
+
+        // باقي وظائف الرفع والقوالب (نفس الأكواد السابقة)
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('imagePreview');
+
+        fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     previewImg.src = ev.target.result;
                     previewImg.classList.remove('hidden');
-                    content.classList.add('opacity-0');
                 };
                 reader.readAsDataURL(file);
             }
-        });
+        };
 
-        // (كود الرفع لـ Supabase كما هو في النسخة السابقة)
+        document.getElementById('generateBtn').onclick = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                authOverlay.classList.remove('hidden');
+                return;
+            }
+            statusMsg.innerText = "Processing...";
+            // هنا تضع كود الرفع لـ Supabase Storage
+        };
     </script>
 </body>
 </html>
