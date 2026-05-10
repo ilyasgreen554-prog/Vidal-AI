@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidal-AI | تحويل الصور إلى فيديو</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Vidal-AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #ffffff; }
         .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-text { background: linear-gradient(45deg, #3b82f6, #2dd4bf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 text-right">
 
     <div class="text-center mb-10">
-        <h1 class="text-5xl font-bold mb-2 gradient-text">Vidal-AI</h1>
-        <p class="text-gray-400">حوّل صور منتجاتك إلى فيديوهات سينمائية بالذكاء الاصطناعي</p>
+        <h1 class="text-5xl font-bold mb-2 text-blue-500">Vidal-AI</h1>
+        <p class="text-gray-400 text-sm">حوّل صور منتجاتك إلى فيديوهات بالذكاء الاصطناعي</p>
     </div>
 
     <div class="glass p-8 rounded-3xl w-full max-w-lg shadow-2xl">
         <div id="dropZone" class="border-2 border-dashed border-blue-500/50 rounded-2xl p-10 text-center cursor-pointer hover:bg-blue-500/5 transition-all">
             <input type="file" id="fileInput" class="hidden" accept="image/*">
+            
             <div id="previewContainer" class="hidden mb-4">
                 <img id="imagePreview" class="max-h-64 mx-auto rounded-lg shadow-lg">
             </div>
+            
             <div id="uploadPlaceholder">
                 <div class="text-5xl mb-4">📸</div>
-                <p class="text-lg mb-2">اضغط هنا أو اسحب الصورة</p>
-                <p class="text-sm text-gray-500">يدعم PNG, JPG (الحد الأقصى 5MB)</p>
+                <p class="text-lg mb-2 font-bold">اضغط هنا لفتح الاستوديو</p>
+                <p class="text-xs text-gray-500">يدعم PNG, JPG</p>
             </div>
         </div>
 
@@ -37,30 +37,22 @@
             إنشاء فيديو احترافي
         </button>
 
-        <div id="statusMessage" class="mt-4 text-center text-sm font-medium"></div>
+        <div id="statusMessage" class="mt-4 text-center text-xs font-medium"></div>
     </div>
 
     <script>
-        // قراءة مفاتيح Cloudflare Workers
-        const supabaseUrl = typeof VITE_SUPABASE_URL !== 'undefined' ? VITE_SUPABASE_URL : '';
-        const supabaseAnonKey = typeof VITE_SUPABASE_ANON_KEY !== 'undefined' ? VITE_SUPABASE_ANON_KEY : '';
-
-        let supabase = null;
-        if (supabaseUrl && supabaseAnonKey) {
-            try {
-                supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-            } catch(e) { console.error("Supabase Error:", e); }
-        }
-
+        // هذا الجزء هو المسؤول عن فتح الاستوديو بشكل آمن
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
         const previewContainer = document.getElementById('previewContainer');
         const imagePreview = document.getElementById('imagePreview');
         const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-        const generateBtn = document.getElementById('generateBtn');
         const statusMessage = document.getElementById('statusMessage');
 
-        dropZone.onclick = () => fileInput.click();
+        // كود بسيط لضمان فتح القائمة عند الضغط
+        dropZone.addEventListener('click', function() {
+            fileInput.click();
+        });
 
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
@@ -70,43 +62,10 @@
                     imagePreview.src = event.target.result;
                     previewContainer.classList.remove('hidden');
                     uploadPlaceholder.classList.add('hidden');
+                    statusMessage.innerText = "جاهز لإنشاء الفيديو ✅";
+                    statusMessage.style.color = "#4ade80";
                 };
                 reader.readAsDataURL(file);
-            }
-        };
-
-        generateBtn.onclick = async () => {
-            if (!supabase) {
-                statusMessage.innerText = "⚠️ لم يتم التعرف على مفاتيح البرمجة بعد.";
-                statusMessage.className = "mt-4 text-center text-red-500";
-                return;
-            }
-
-            const file = fileInput.files[0];
-            if (!file) {
-                statusMessage.innerText = "❌ يرجى اختيار صورة أولاً";
-                statusMessage.className = "mt-4 text-center text-yellow-500";
-                return;
-            }
-
-            generateBtn.disabled = true;
-            statusMessage.innerText = "⏳ جاري الرفع...";
-            statusMessage.className = "mt-4 text-center text-blue-400";
-
-            try {
-                const fileName = `vidal_${Date.now()}.png`;
-                const { data, error } = await supabase.storage
-                    .from('product-images')
-                    .upload(fileName, file);
-
-                if (error) throw error;
-                statusMessage.innerText = "✅ تم الرفع بنجاح! جاري معالجة الفيديو...";
-                statusMessage.className = "mt-4 text-center text-green-400";
-            } catch (error) {
-                statusMessage.innerText = "❌ خطأ: " + error.message;
-                statusMessage.className = "mt-4 text-center text-red-500";
-            } finally {
-                generateBtn.disabled = false;
             }
         };
     </script>
